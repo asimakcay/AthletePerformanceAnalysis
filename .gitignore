@@ -1,49 +1,67 @@
-# History files
-.Rhistory
-.Rapp.history
+library(readxl) 
+veri1 <- read_excel("C:/veri1.xls") 
+View(veri1) 
 
-# Session Data files
-.RData
-.RDataTmp
+library(dplyr)
+library(ggplot2) 
+library(corrplot)  
 
-# User-specific files
-.Ruserdata
+if (!requireNamespace("reshape2", quietly = TRUE)) { 
+  install.packages("reshape2")
+}
+library(reshape2)
 
-# Example code in package build process
-*-Ex.R
+head(veri1)
 
-# Output files from R CMD build
-/*.tar.gz
+Removing missing values
+data <- na.omit(veri1)
 
-# Output files from R CMD check
-/*.Rcheck/
+Simple Linear Regression Model: spike ~ height + weight
+model <- lm(spike ~ height + weight, data = veri1)
 
-# RStudio files
-.Rproj.user/
+Summary of the model
+summary(model)
 
-# produced vignettes
-vignettes/*.html
-vignettes/*.pdf
+Graphical representation of the model for height
+ggplot(data, aes(x = height, y = spike)) +
+geom_point() +
+geom_smooth(method = "lm", col = "red")
 
-# OAuth2 token, see https://github.com/hadley/httr/releases/tag/v0.3
-.httr-oauth
+Graphical representation of the model for weight
+ggplot(data, aes(x = weight, y = spike)) +
+geom_point() +
+geom_smooth(method = "lm", col = "blue")
 
-# knitr and R markdown default cache directories
-*_cache/
-/cache/
+Calculate the correlation matrix for selected columns
+correlation_matrix <- cor(veri1[, c("height", "weight", "spike")])
+print(correlation_matrix)
 
-# Temporary files created by R markdown
-*.utf8.md
-*.knit.md
+Display the correlation matrix using corrplot
+corrplot(correlation_matrix, method = "circle")
 
-# R Environment Variables
-.Renviron
+Checking if the regression residuals have a normal distribution
+qqnorm(model$residuals)
+qqline(model$residuals, col = "red")
 
-# pkgdown site
-docs/
+Detection of outliers
+for(column in colnames(veri1)) {
+if(is.numeric(veri1[[column]])) {
+Q1 <- quantile(veri1[[column]], 0.25, na.rm = TRUE)
+Q3 <- quantile(veri1[[column]], 0.75, na.rm = TRUE)
+IQR <- Q3 - Q1
+lower_bound <- Q1 - 1.5 * IQR
+upper_bound <- Q3 + 1.5 * IQR
+outliers <- sum(veri1[[column]] < lower_bound | veri1[[column]] > upper_bound, na.rm = TRUE)
+cat(column, "için aykırı değer sayısı:", outliers, "\n")
+}
+}
 
-# translation temp files
-po/*~
+Melt numerical data for visualization
+numerics <- veri1 %>% select_if(is.numeric)
+long_numerics <- melt(numerics, id.vars = NULL)
 
-# RStudio Connect folder
-rsconnect/
+Boxplot of numerical variables
+ggplot(long_numerics, aes(x = variable, y = value)) +
+geom_boxplot() +
+theme_minimal() +
+labs(title = "Boxplot of Numerical Variables", x = "Variables", y = "Values")
